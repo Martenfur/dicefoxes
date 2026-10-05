@@ -67,10 +67,10 @@ export function attachMessageHandler(client, options = {})
 			return;
 		}
 
-		let lines;
+		let rendered;
 		try
 		{
-			lines = renderCommands(message.content ?? '');
+			rendered = renderCommands(message.content ?? '');
 		}
 		catch (error)
 		{
@@ -78,7 +78,12 @@ export function attachMessageHandler(client, options = {})
 			return;
 		}
 
-		if (lines.length === 0)
+		for (const skip of rendered.skipped)
+		{
+			logger.warn(`[dicefoxes] skipped ${skip.name} "${skip.text}" in ${message.channelId}: ${skip.reason}`);
+		}
+
+		if (rendered.lines.length === 0)
 		{
 			return;
 		}
@@ -90,7 +95,7 @@ export function attachMessageHandler(client, options = {})
 
 		try
 		{
-			await message.channel.send(lines.join('\n'));
+			await message.channel.send(rendered.lines.join('\n'));
 		}
 		catch (error)
 		{

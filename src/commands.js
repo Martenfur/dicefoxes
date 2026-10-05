@@ -210,14 +210,33 @@ export function extractCommands(content)
 }
 
 /**
- * Run a message's commands and collect the reply lines.
+ * @typedef {object} SkippedCommand
+ * @property {string} name canonical command name.
+ * @property {string} text the trimmed command string that produced no reply.
+ * @property {string} reason why it was skipped.
+ */
+
+/**
+ * @typedef {object} RenderedMessage
+ * @property {string[]} lines reply blocks, one per successful command.
+ * @property {SkippedCommand[]} skipped recognised commands with no reply.
+ */
+
+/**
+ * Run a message's commands and collect the reply blocks.
+ *
+ * A command that fails with a `DiceError` (a trigger word in ordinary
+ * chatter, e.g. `roll call tomorrow`) is skipped, not answered: it lands in
+ * `skipped` with the reason, for the caller to log internally. Anything
+ * else is a bug and propagates.
  *
  * @param {string} content raw message text.
- * @returns {string[]} one reply line per valid command, in order.
+ * @returns {RenderedMessage} reply blocks plus skips, in message order.
  */
 export function renderCommands(content)
 {
 	const lines = [];
+	const skipped = [];
 	for (const parsed of parseCommands(content))
 	{
 		const command = findCommand(parsed.alias);
@@ -226,8 +245,21 @@ export function renderCommands(content)
 			continue;
 		}
 
-		lines.push(command.handle(parsed.argument));
+		try
+		{
+			lines.push(command.handle(parsed.argument));
+		}
+		catch (error)
+		{
+			if (error && error.name === 'DiceError')
+			{
+				skipped.push({ name: parsed.name, text: parsed.text, reason: error.message });
+				continue;
+			}
+
+			throw error;
+		}
 	}
 
-	return lines;
+	return { lines, skipped };
 }

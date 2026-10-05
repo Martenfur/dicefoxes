@@ -1,20 +1,34 @@
 /**
  * Roll command.
  *
- * Echo stage: returns the dice argument untouched so the parser and the
- * Discord wiring can be exercised end to end. Real dice resolution will
- * replace the body of {@link handleRoll} later.
+ * Parses a dice formula out of the argument, rolls every die through the
+ * shared randomness module, and answers with the total plus the annotated
+ * formula.
  */
 
+import { rollFormula } from '../dice.js';
+
 /**
- * Echo a dice expression back as a reply line.
+ * Roll a dice formula.
  *
  * @param {string} argument everything after the trigger keyword, trimmed.
- * @returns {string} one reply line.
+ * @returns {string} reply block: total plus annotated formula.
+ * @throws {import('../dice.js').DiceError} on a bad formula; the caller
+ *   skips it silently and logs the reason instead of answering.
  */
 function handleRoll(argument)
 {
-	return argument ? `Rolled ${argument}` : 'Rolled';
+	if (!argument)
+	{
+		return '❌ roll what? Try: roll 2d6 + 3';
+	}
+
+	const result = rollFormula(argument);
+	const head = result.degree === null
+		? `**${result.total}**`
+		: `**${result.total}** ${result.degree.emoji}`;
+	const tail = result.dc === null ? result.annotated : `${result.annotated} vs DC ${result.dc}`;
+	return `${head}\n-# ${tail}`;
 }
 
 /**
