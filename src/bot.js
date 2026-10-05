@@ -67,10 +67,11 @@ export function attachMessageHandler(client, options = {})
 			return;
 		}
 
+		const context = { userId: message.author?.id ?? null };
 		let rendered;
 		try
 		{
-			rendered = renderCommands(message.content ?? '');
+			rendered = renderCommands(message.content ?? '', { context });
 		}
 		catch (error)
 		{

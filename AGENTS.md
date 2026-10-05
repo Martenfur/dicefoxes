@@ -47,8 +47,12 @@ This file is for agents working in this repo. Follow it for every change.
   Each command lives in its own `src/commands/<name>.js` and is registered
   in `COMMANDS` inside `src/commands.js`. Every entry needs `args` and
   `description`: `dfhelp` renders the whole registry from those fields.
+  Commands with subcommands expose them via `subcommands`; `dfhelp`
+  lists those instead of the parent line.
   `src/dice.js` is the pure formula resolver, `src/random.js` the batched
   randomness module behind it (one `rollBatch` call per formula).
+  `src/macrostore.js` persists macros to `userdata.json` (gitignored,
+  written on every mutation); it is the only module touching the filesystem.
   `src/dice.js`, `src/random.js`, and command files must not import Discord,
   `process.env`, or time.
 - Log lines are prefixed `[dicefoxes]`.
@@ -64,6 +68,8 @@ This file is for agents working in this repo. Follow it for every change.
   (`rolling`, `troll` are ignored). `roll` has alias `ролл`. Lines without a
   trigger are skipped; text before the trigger is dropped and the trimmed
   rest is the argument.
+- Per-user state (character pins) arrives via the command context: the bot
+  passes `{ userId: message.author?.id }` into `renderCommands`.
 - `roll <formula>` replies with the total plus the annotated formula:
   `**<total>**` on the first line, `-# <annotated>` (subtext) on the second.
   With `DC<n>` / `ДС<n>` the total line gains `<emoji>` and the

@@ -16,7 +16,20 @@
  */
 
 import { dfhelpCommand } from './commands/dfhelp.js';
+import { macroCommand } from './commands/macro.js';
 import { rollCommand } from './commands/roll.js';
+
+/**
+ * @typedef {object} CommandContext
+ * @property {string|null} userId author id for per-user state, null when unknown.
+ * @property {import('./macrostore.js').MacroStore} [macros] macro store; commands fall back to the file-backed one.
+ */
+
+/**
+ * @typedef {object} SubcommandHelp
+ * @property {string} syntax display text without the leading `- `, e.g. `macro set <name>: <formula>`.
+ * @property {string} description one-two sentence summary.
+ */
 
 /**
  * @typedef {object} CommandDefinition
@@ -24,7 +37,8 @@ import { rollCommand } from './commands/roll.js';
  * @property {string[]} aliases trigger words, matched as whole words anywhere in a line (case-insensitive).
  * @property {string} args usage placeholder, e.g. `<formula>`; empty when the command takes none.
  * @property {string} description one-two sentence summary for the help listing.
- * @property {(argument: string) => string} handle builds one reply line from the trimmed argument.
+ * @property {SubcommandHelp[]} [subcommands] entries dfhelp lists instead of this command's own line.
+ * @property {(argument: string, context: CommandContext) => string} handle builds one reply block from the trimmed argument.
  */
 
 /**
@@ -48,7 +62,7 @@ import { rollCommand } from './commands/roll.js';
  *
  * @type {CommandDefinition[]}
  */
-export const COMMANDS = [rollCommand, dfhelpCommand];
+export const COMMANDS = [rollCommand, macroCommand, dfhelpCommand];
 
 /**
  * Find a command by name or alias (case-insensitive).
@@ -235,10 +249,13 @@ export function extractCommands(content)
  * else is a bug and propagates.
  *
  * @param {string} content raw message text.
+ * @param {object} [options] optional overrides.
+ * @param {CommandContext} [options.context] author and store info for commands that need it.
  * @returns {RenderedMessage} reply blocks plus skips, in message order.
  */
-export function renderCommands(content)
+export function renderCommands(content, options = {})
 {
+	const context = options.context ?? { userId: null };
 	const lines = [];
 	const skipped = [];
 	for (const parsed of parseCommands(content))
@@ -251,7 +268,7 @@ export function renderCommands(content)
 
 		try
 		{
-			lines.push(command.handle(parsed.argument));
+			lines.push(command.handle(parsed.argument, context));
 		}
 		catch (error)
 		{
