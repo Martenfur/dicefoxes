@@ -45,7 +45,8 @@ This file is for agents working in this repo. Follow it for every change.
 - File layout: `src/bot.js` holds everything Discord-specific and stays thin.
   `src/commands.js` holds the pure command parser (text in, text out).
   Each command lives in its own `src/commands/<name>.js` and is registered
-  in `COMMANDS` inside `src/commands.js`.
+  in `COMMANDS` inside `src/commands.js`. Every entry needs `args` and
+  `description`: `dfhelp` renders the whole registry from those fields.
   `src/dice.js` is the pure formula resolver, `src/random.js` the batched
   randomness module behind it (one `rollBatch` call per formula).
   `src/dice.js`, `src/random.js`, and command files must not import Discord,

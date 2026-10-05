@@ -40,5 +40,7 @@ export const rollCommand =
 {
 	name: 'roll',
 	aliases: ['roll', 'ролл'],
+	args: '<formula>',
+	description: 'Rolls dice. Example: `roll 1d20 + 2 DC15`.',
 	handle: handleRoll,
 };

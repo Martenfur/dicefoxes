@@ -5,7 +5,8 @@
  * or the clock, so it can be unit tested without a client.
  *
  * To add a command, create `src/commands/<name>.js` exporting a
- * `CommandDefinition` (see `roll.js`), then register it in {@link COMMANDS}:
+ * `CommandDefinition` (`name`, `aliases`, `args`, `description`, `handle`;
+ * see `roll.js`), then register it in {@link COMMANDS}:
  *
  * ```js
  * import { greetCommand } from './commands/greet.js';
@@ -14,12 +15,15 @@
  * ```
  */
 
+import { dfhelpCommand } from './commands/dfhelp.js';
 import { rollCommand } from './commands/roll.js';
 
 /**
  * @typedef {object} CommandDefinition
  * @property {string} name canonical command name.
  * @property {string[]} aliases trigger words, matched as whole words anywhere in a line (case-insensitive).
+ * @property {string} args usage placeholder, e.g. `<formula>`; empty when the command takes none.
+ * @property {string} description one-two sentence summary for the help listing.
  * @property {(argument: string) => string} handle builds one reply line from the trimmed argument.
  */
 
@@ -44,7 +48,7 @@ import { rollCommand } from './commands/roll.js';
  *
  * @type {CommandDefinition[]}
  */
-export const COMMANDS = [rollCommand];
+export const COMMANDS = [rollCommand, dfhelpCommand];
 
 /**
  * Find a command by name or alias (case-insensitive).
