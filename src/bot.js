@@ -25,6 +25,20 @@ export function createClient()
 }
 
 /**
+ * Wait a number of milliseconds.
+ *
+ * @param {number} ms delay length.
+ * @returns {Promise<void>} resolves after the delay.
+ */
+function sleep(ms)
+{
+	return new Promise((resolve) =>
+	{
+		setTimeout(resolve, ms);
+	});
+}
+
+/**
  * Wire up message handling. Returns the client for convenience.
  *
  * Command parsing stays in `src/commands.js` (pure text in, text out); this
@@ -33,11 +47,13 @@ export function createClient()
  * @param {Client} client client to attach listeners to.
  * @param {object} [options] optional overrides.
  * @param {Console} [options.logger] log sink, defaults to `console`.
+ * @param {number} [options.replyDelayMs] wait before sending a reply, in ms (default 250, `0` disables).
  * @returns {Client} the same client.
  */
 export function attachMessageHandler(client, options = {})
 {
 	const logger = options.logger ?? console;
+	const replyDelayMs = options.replyDelayMs ?? 250;
 
 	client.on(Events.ClientReady, (ready) =>
 	{
@@ -67,6 +83,11 @@ export function attachMessageHandler(client, options = {})
 			return;
 		}
 
+		if (replyDelayMs > 0)
+		{
+			await sleep(replyDelayMs);
+		}
+
 		try
 		{
 			await message.channel.send(lines.join('\n'));
@@ -91,6 +112,7 @@ export function attachMessageHandler(client, options = {})
  * @param {string} token Discord bot token from `process.env.DISCORD_TOKEN`.
  * @param {object} [options] optional overrides.
  * @param {Console} [options.logger] log sink, defaults to `console`.
+ * @param {number} [options.replyDelayMs] wait before sending a reply, in ms (default 250, `0` disables).
  * @param {Client} [options.client] supply a client instead of building one.
  * @returns {Promise<Client>} resolves once the gateway connection is up.
  */
@@ -104,7 +126,7 @@ export async function startBot(token, options = {})
 	}
 
 	const client = options.client ?? createClient();
-	attachMessageHandler(client, { logger });
+	attachMessageHandler(client, { ...options, logger });
 
 	await client.login(token);
 	return client;

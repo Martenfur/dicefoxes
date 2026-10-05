@@ -60,6 +60,8 @@ This file is for agents working in this repo. Follow it for every change.
 - `roll <args>` replies `Rolled <args>` (`roll` alone replies `Rolled`).
   Reply lines are joined with `\n` into a single `channel.send`. Empty
   results send nothing.
+- Replies wait `options.replyDelayMs` before sending (default 250ms).
+  Pass `0` to reply immediately.
 - Wrap `channel.send` in `try/catch` and log a warning with the channel id.
   Never let one message take down the bot.
 - Missing `DISCORD_TOKEN` is a startup throw with a message telling the user
