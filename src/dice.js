@@ -47,7 +47,7 @@ export class DiceError extends Error
 /**
  * @typedef {object} RollResult
  * @property {string} total formatted total, e.g. `25`.
- * @property {string} annotated formula with rolled faces, e.g. `([15]1d20 + 12) * 2 - [1,4]2d4`.
+ * @property {string} annotated formula with rolled faces, e.g. `([15]1d20 + 12) * 2 - [1, 4]2d4`.
  * @property {number|null} dc difficulty class, or null when unset.
  * @property {Degree|null} degree graded result, or null when no DC was set.
  * @property {import('./random.js').RandomSource|null} source provider that served the roll, or null for diceless formulas.
@@ -497,7 +497,7 @@ function evaluate(node, faces, cursor, d20faces)
 
 		const value = values.reduce((sum, face) => sum + face, 0);
 		const label = node.fate ? `${node.count}df` : `${node.count}d${node.sides}`;
-		return { value, annotated: `[${values.join(',')}]${label}` };
+		return { value, annotated: `[${values.join(', ')}]${label}` };
 	}
 
 	if (node.type === 'unary')

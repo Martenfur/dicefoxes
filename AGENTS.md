@@ -83,6 +83,13 @@ This file is for agents working in this repo. Follow it for every change.
   positives) and logged with the reason and channel id; bare `roll`
   replies with a usage hint. Reply blocks are joined with `\n` into a single
   `channel.send`. Empty results send nothing.
+- `dfsecret` binds the current channel as the server's secret channel
+  (server/channel pairs live in `userdata.json`). `roll secret <formula>` /
+  `ролл секрет <formula>` then replies `🫥 It's a secret!` in place
+  while the full result is sent to the bound channel as a separate message
+  prefixed with `Secret roll <link to the placeholder>`.
+  Without a bound channel the roll answers with a notice instead of rolling
+  silently. DMs cannot bind (no server).
 - Replies wait `options.replyDelayMs` before sending (default 250ms).
   Pass `0` to reply immediately.
 - Wrap `channel.send` in `try/catch` and log a warning with the channel id.

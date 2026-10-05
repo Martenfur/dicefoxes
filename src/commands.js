@@ -16,12 +16,15 @@
  */
 
 import { dfhelpCommand } from './commands/dfhelp.js';
+import { dfsecretCommand } from './commands/dfsecret.js';
 import { macroCommand } from './commands/macro.js';
 import { rollCommand } from './commands/roll.js';
 
 /**
  * @typedef {object} CommandContext
  * @property {string|null} userId author id for per-user state, null when unknown.
+ * @property {string|null} [guildId] server id for server state, null in DMs.
+ * @property {string|null} [channelId] current channel id.
  * @property {import('./macrostore.js').MacroStore} [macros] macro store; commands fall back to the file-backed one.
  * @property {import('./random.js').RandomProvider} [random] active randomness provider.
  */
@@ -39,7 +42,7 @@ import { rollCommand } from './commands/roll.js';
  * @property {string} args usage placeholder, e.g. `<formula>`; empty when the command takes none.
  * @property {string} description one-two sentence summary for the help listing.
  * @property {SubcommandHelp[]} [subcommands] entries dfhelp lists instead of this command's own line.
- * @property {(argument: string, context: CommandContext) => string|Promise<string>} handle builds one reply block from the trimmed argument.
+ * @property {(argument: string, context: CommandContext) => string|CommandReply|Promise<string|CommandReply>} handle builds one reply block from the trimmed argument.
  */
 
 /**
@@ -63,7 +66,7 @@ import { rollCommand } from './commands/roll.js';
  *
  * @type {CommandDefinition[]}
  */
-export const COMMANDS = [rollCommand, macroCommand, dfhelpCommand];
+export const COMMANDS = [rollCommand, macroCommand, dfsecretCommand, dfhelpCommand];
 
 /**
  * Find a command by name or alias (case-insensitive).
@@ -229,6 +232,19 @@ export function extractCommands(content)
 }
 
 /**
+ * @typedef {object} ChannelSend
+ * @property {string} channelId id of the channel to send to.
+ * @property {string} text message text.
+ * @property {string} [replyLinkNote] when set, the bot prefixes `<note> <reply url>` above the text.
+ */
+
+/**
+ * @typedef {object} CommandReply
+ * @property {string|null} reply text for the current channel, null for silence.
+ * @property {ChannelSend[]} sends extra messages for other channels.
+ */
+
+/**
  * @typedef {object} SkippedCommand
  * @property {string} name canonical command name.
  * @property {string} text the trimmed command string that produced no reply.
@@ -239,6 +255,7 @@ export function extractCommands(content)
  * @typedef {object} RenderedMessage
  * @property {string[]} lines reply blocks, one per successful command.
  * @property {SkippedCommand[]} skipped recognised commands with no reply.
+ * @property {ChannelSend[]} sends messages for other channels, in message order.
  */
 
 /**
@@ -252,13 +269,14 @@ export function extractCommands(content)
  * @param {string} content raw message text.
  * @param {object} [options] optional overrides.
  * @param {CommandContext} [options.context] author and store info for commands that need it.
- * @returns {Promise<RenderedMessage>} reply blocks plus skips, in message order.
+ * @returns {Promise<RenderedMessage>} reply blocks, skips, and cross-channel sends, in message order.
  */
 export async function renderCommands(content, options = {})
 {
 	const context = options.context ?? { userId: null };
 	const lines = [];
 	const skipped = [];
+	const sends = [];
 	for (const parsed of parseCommands(content))
 	{
 		const command = findCommand(parsed.alias);
@@ -269,7 +287,28 @@ export async function renderCommands(content, options = {})
 
 		try
 		{
-			lines.push(await command.handle(parsed.argument, context));
+			const reply = await command.handle(parsed.argument, context);
+			if (reply === null || reply === undefined)
+			{
+				skipped.push({ name: parsed.name, text: parsed.text, reason: 'no reply' });
+				continue;
+			}
+
+			if (typeof reply === 'string')
+			{
+				lines.push(reply);
+				continue;
+			}
+
+			if (reply.reply !== null && reply.reply !== undefined)
+			{
+				lines.push(reply.reply);
+			}
+
+			for (const send of reply.sends ?? [])
+			{
+				sends.push(send);
+			}
 		}
 		catch (error)
 		{
@@ -283,5 +322,5 @@ export async function renderCommands(content, options = {})
 		}
 	}
 
-	return { lines, skipped };
+	return { lines, skipped, sends };
 }

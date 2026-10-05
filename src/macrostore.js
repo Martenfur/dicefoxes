@@ -26,6 +26,7 @@ export class MacroStore
 		this.file = file;
 		this.macros = new Map();
 		this.users = new Map();
+		this.secrets = new Map();
 		this.ready = false;
 	}
 
@@ -76,6 +77,17 @@ export class MacroStore
 				}
 			}
 		}
+
+		if (data.secretChannels && typeof data.secretChannels === 'object')
+		{
+			for (const [guildId, channelId] of Object.entries(data.secretChannels))
+			{
+				if (typeof channelId === 'string')
+				{
+					this.secrets.set(guildId, channelId);
+				}
+			}
+		}
 	}
 
 	/**
@@ -84,12 +96,16 @@ export class MacroStore
 	save()
 	{
 		mkdirSync(dirname(this.file), { recursive: true });
-		const users = {};
+		const data = {
+			macros: Object.fromEntries(this.macros),
+			users: {},
+			secretChannels: Object.fromEntries(this.secrets),
+		};
 		for (const [userId, pins] of this.users)
 		{
-			users[userId] = [...pins];
+			data.users[userId] = [...pins];
 		}
-		writeFileSync(this.file, `${JSON.stringify({ macros: Object.fromEntries(this.macros), users }, null, 2)}\n`);
+		writeFileSync(this.file, `${JSON.stringify(data, null, 2)}\n`);
 	}
 
 	/**
@@ -212,6 +228,35 @@ export class MacroStore
 		this.users.set(key, next);
 		this.save();
 		return true;
+	}
+
+	/**
+	 * Read the secret channel bound to a server.
+	 *
+	 * @param {string|null} guildId server id, or null when unknown.
+	 * @returns {string|undefined} bound channel id, if any.
+	 */
+	getSecretChannel(guildId)
+	{
+		this.load();
+		if (guildId === null || guildId === undefined)
+		{
+			return undefined;
+		}
+		return this.secrets.get(String(guildId));
+	}
+
+	/**
+	 * Bind a secret channel to a server, syncing to disk.
+	 *
+	 * @param {string} guildId server id.
+	 * @param {string} channelId channel id.
+	 */
+	setSecretChannel(guildId, channelId)
+	{
+		this.load();
+		this.secrets.set(String(guildId), channelId);
+		this.save();
 	}
 }
 

@@ -50,6 +50,25 @@ You succeed if you meet or beat the DC. You crit succees or crit fail if you mis
 If you roll a single d20, natural 20 will also promote your degree of success (for example, fail becomes a success or success becomes crit success). 
 If you roll a natual 1, the opposite thing happens - you get a result that is one degree of success lower. 
 
+### Secret channel
+
+You can set a secret channel for secret rolls you don't want your players to see. 
+Use this command in a channel you want to assign for secret rolls:
+
+```
+dfsecret
+```
+
+Bot will remember this channel and all secret rolls in this server will go to that channel.
+
+Afterwards, you will be able to secret rolls:
+
+```
+roll secret 1d20
+or
+ролл секрет 1д20
+```
+
 ### Macros
 
 You can set a formula as a macro you can invoke later. 

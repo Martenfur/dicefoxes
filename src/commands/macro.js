@@ -15,6 +15,21 @@ import { macroStore } from '../macrostore.js';
 const MAX_EXPANSION_PASSES = 10;
 
 /**
+ * Names with structural meaning: command triggers, the secret marker, and
+ * macro subcommands. A macro named exactly one of these would shadow (or be
+ * shadowed by) real syntax — `roll secret` is always a secret roll, never a
+ * macro — so such names are refused at set time.
+ */
+const RESERVED_NAMES = new Set([
+	'roll', 'ролл',
+	'macro',
+	'dfhelp',
+	'dfsecret',
+	'secret', 'секрет',
+	'set', 'delete', 'show', 'me', 'not',
+]);
+
+/**
  * Normalise a macro or character name: lower case, single spaces.
  *
  * @param {string} text raw name text.
@@ -272,6 +287,11 @@ async function macroSet(rest, store, userId)
 	if (!name || !formula)
 	{
 		throw new DiceError('Usage: macro set <name>: <formula>');
+	}
+
+	if (RESERVED_NAMES.has(name))
+	{
+		throw new DiceError(`"${name}" is a reserved word — pick another macro name`);
 	}
 
 	if (referencesName(formula, name))
