@@ -1,21 +1,6 @@
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 
-/**
- * Check whether a message should trigger the bot.
- *
- * @param {string} content raw message text.
- * @returns {boolean} true when the text starts with `roll` or `ролл`.
- */
-export function isRollTrigger(content)
-{
-	if (typeof content !== 'string' || content.length === 0)
-	{
-		return false;
-	}
-
-	const lowered = content.trimStart().toLowerCase();
-	return lowered.startsWith('roll') || lowered.startsWith('ролл');
-}
+import { renderCommands } from './commands.js';
 
 /**
  * Build the Discord client.
@@ -42,6 +27,9 @@ export function createClient()
 /**
  * Wire up message handling. Returns the client for convenience.
  *
+ * Command parsing stays in `src/commands.js` (pure text in, text out); this
+ * handler only joins the reply lines into one Discord message.
+ *
  * @param {Client} client client to attach listeners to.
  * @param {object} [options] optional overrides.
  * @param {Console} [options.logger] log sink, defaults to `console`.
@@ -63,14 +51,25 @@ export function attachMessageHandler(client, options = {})
 			return;
 		}
 
-		if (!isRollTrigger(message.content ?? ''))
+		let lines;
+		try
+		{
+			lines = renderCommands(message.content ?? '');
+		}
+		catch (error)
+		{
+			logger.error('[dicefoxes] unexpected failure while rendering commands', error);
+			return;
+		}
+
+		if (lines.length === 0)
 		{
 			return;
 		}
 
 		try
 		{
-			await message.channel.send('roll! :D');
+			await message.channel.send(lines.join('\n'));
 		}
 		catch (error)
 		{

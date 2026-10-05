@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { startBot } from './src/bot/index.js';
+import { startBot } from './src/bot.js';
 
 startBot(process.env.DISCORD_TOKEN).catch((error) =>
 {

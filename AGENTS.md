@@ -4,14 +4,15 @@ This file is for agents working in this repo. Follow it for every change.
 
 ## Scope
 
-- Right now: Discord bot wiring only. No dice parsing, no randomness providers.
+- Discord bot wiring plus a pure line-based command parser. No dice resolution,
+  no randomness providers yet.
 - Do not touch `.env`. It already exists and holds secrets. If a new variable
   is needed, stop and ask the maintainer instead of editing it.
 
 ## Runtime
 
 - Node.js `>=20.11.0`, ESM only (`"type": "module"` in `package.json`).
-- Imports always use explicit `.js` extensions: `from './bot/index.js'`.
+- Imports always use explicit `.js` extensions: `from './bot.js'`.
 - `index.js` is the entry point. It loads `dotenv/config` first, then calls
   `startBot(process.env.DISCORD_TOKEN)`.
 - Secrets come only from `process.env` (loaded from `.env` via `dotenv`).
@@ -30,14 +31,18 @@ This file is for agents working in this repo. Follow it for every change.
   `try` / `catch`, and multi-line arrow bodies.
 - Correct:
   ```js
-  export function isRollTrigger(content)
+  export function findCommand(token)
   {
-  	return content.trimStart().toLowerCase().startsWith('roll');
+  	return COMMANDS.find((command) => command.aliases.includes(token)) ?? null;
   }
   ```
+  (example only — real trigger logic lives in `src/commands.js`).
 - Wrong: `function f() {` on one line.
 - JSDoc on every exported function (params + return in `@param` / `@returns`).
-- File layout: `src/bot/` holds everything Discord-specific and stays thin.
+- File layout: `src/bot.js` holds everything Discord-specific and stays thin.
+  `src/commands.js` holds the pure command parser (text in, text out).
+  Each command lives in its own `src/commands/<name>.js` and is registered
+  in `COMMANDS` inside `src/commands.js`.
   Future dice logic (if any) must not import Discord, `process.env`, or time.
 - Log lines are prefixed `[dicefoxes]`.
 
@@ -46,8 +51,15 @@ This file is for agents working in this repo. Follow it for every change.
 - Intents: `Guilds`, `GuildMessages`, `MessageContent` (privileged — also
   enable it in the developer portal), `DirectMessages`. Partial: `Channel`.
 - Ignore any message from a bot author to avoid self-replies.
-- Trigger: message text, after `trimStart()` + lowercase, starts with `roll`
-  or `ролл`. Reply in the same channel with exactly `roll! :D`.
+- Parsing lives in `src/commands.js` and is line-based: each line is scanned for
+  the first whole-word trigger, anywhere in the line, so `kok: roll 1d20`
+  counts. Matching is case-insensitive but never fires inside another word
+  (`rolling`, `troll` are ignored). `roll` has alias `ролл`. Lines without a
+  trigger are skipped; text before the trigger is dropped and the trimmed
+  rest is the argument.
+- `roll <args>` replies `Rolled <args>` (`roll` alone replies `Rolled`).
+  Reply lines are joined with `\n` into a single `channel.send`. Empty
+  results send nothing.
 - Wrap `channel.send` in `try/catch` and log a warning with the channel id.
   Never let one message take down the bot.
 - Missing `DISCORD_TOKEN` is a startup throw with a message telling the user
