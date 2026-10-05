@@ -1,6 +1,7 @@
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 
 import { renderCommands } from './commands.js';
+import { createRandom } from './random.js';
 
 /**
  * Build the Discord client.
@@ -48,12 +49,14 @@ function sleep(ms)
  * @param {object} [options] optional overrides.
  * @param {Console} [options.logger] log sink, defaults to `console`.
  * @param {number} [options.replyDelayMs] wait before sending a reply, in ms (default 250, `0` disables).
+ * @param {import('./random.js').RandomProvider} [options.random] active randomness provider.
  * @returns {Client} the same client.
  */
 export function attachMessageHandler(client, options = {})
 {
 	const logger = options.logger ?? console;
 	const replyDelayMs = options.replyDelayMs ?? 250;
+	const random = options.random ?? createRandom();
 
 	client.on(Events.ClientReady, (ready) =>
 	{
@@ -67,11 +70,11 @@ export function attachMessageHandler(client, options = {})
 			return;
 		}
 
-		const context = { userId: message.author?.id ?? null };
+		const context = { userId: message.author?.id ?? null, random };
 		let rendered;
 		try
 		{
-			rendered = renderCommands(message.content ?? '', { context });
+			rendered = await renderCommands(message.content ?? '', { context });
 		}
 		catch (error)
 		{
@@ -119,6 +122,7 @@ export function attachMessageHandler(client, options = {})
  * @param {object} [options] optional overrides.
  * @param {Console} [options.logger] log sink, defaults to `console`.
  * @param {number} [options.replyDelayMs] wait before sending a reply, in ms (default 250, `0` disables).
+ * @param {import('./random.js').RandomProvider} [options.random] active randomness provider.
  * @param {Client} [options.client] supply a client instead of building one.
  * @returns {Promise<Client>} resolves once the gateway connection is up.
  */

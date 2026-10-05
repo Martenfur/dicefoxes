@@ -19,7 +19,10 @@ This file is for agents working in this repo. Follow it for every change.
 - `index.js` is the entry point. It loads `dotenv/config` first, then calls
   `startBot(process.env.DISCORD_TOKEN)`.
 - Secrets come only from `process.env` (loaded from `.env` via `dotenv`).
-  No second source, no fallback file, no hardcoded tokens.
+  No second source, no fallback file, no hardcoded tokens. Optional
+  `RANDOM_ORG_API_KEY` enables the random.org provider (`☁️`); a missing
+  key or any request failure falls back to the local CSPRNG (`🎲`).
+  Never log key values.
 - Dependencies: `discord.js@^14`, `dotenv@^16`.
 - Scripts: `npm start` → `node index.js`, `npm run dev` → `node --watch index.js`.
 
@@ -51,6 +54,8 @@ This file is for agents working in this repo. Follow it for every change.
   lists those instead of the parent line.
   `src/dice.js` is the pure formula resolver, `src/random.js` the batched
   randomness module behind it (one `rollBatch` call per formula).
+  Providers are `local` (🎲) and `randomorg` (☁️, one `generateIntegerSequences`
+  call per formula with automatic local fallback); `index.js` picks from env.
   `src/macrostore.js` persists macros to `userdata.json` (gitignored,
   written on every mutation); it is the only module touching the filesystem.
   `src/dice.js`, `src/random.js`, and command files must not import Discord,
@@ -71,9 +76,10 @@ This file is for agents working in this repo. Follow it for every change.
 - Per-user state (character pins) arrives via the command context: the bot
   passes `{ userId: message.author?.id }` into `renderCommands`.
 - `roll <formula>` replies with the total plus the annotated formula:
-  `**<total>**` on the first line, `-# <annotated>` (subtext) on the second.
-  With `DC<n>` / `ДС<n>` the total line gains `<emoji>` and the
-  subtext gains `vs DC <n>`. Bad formulas are skipped silently (false
+  `**<total>**` on the first line, `-# <annotated> <emoji>` (subtext) on
+  the second, where `<emoji>` marks the serving provider (🎲/☁️).
+  With `DC<n>` / `ДС<n>` the total line gains the degree emoji and the
+  subtext gains `vs DC <n>` before the provider emoji. Bad formulas are skipped silently (false
   positives) and logged with the reason and channel id; bare `roll`
   replies with a usage hint. Reply blocks are joined with `\n` into a single
   `channel.send`. Empty results send nothing.

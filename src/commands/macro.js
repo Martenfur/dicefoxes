@@ -8,6 +8,7 @@
  */
 
 import { DiceError, rollFormula } from '../dice.js';
+import { LOCAL_SOURCE } from '../random.js';
 import { macroStore } from '../macrostore.js';
 
 /** How many nested-expansion passes before calling it a cycle. */
@@ -157,10 +158,11 @@ function referencesName(text, name)
  * without caring about randomness.
  *
  * @param {string} formula expanded formula text.
+ * @returns {Promise<void>} resolves when the formula is valid.
  */
-function validateFormula(formula)
+async function validateFormula(formula)
 {
-	rollFormula(formula, (specs) => specs.map((spec) => Array(spec.count).fill(0)));
+	await rollFormula(formula, (specs) => ({ faces: specs.map((spec) => Array(spec.count).fill(0)), source: LOCAL_SOURCE }));
 }
 
 /**
@@ -255,9 +257,9 @@ export function renderMacroTree(entries)
  * @param {string} rest text after the subcommand.
  * @param {import('../macrostore.js').MacroStore} store macro store.
  * @param {string|null} userId author id, or null when unknown.
- * @returns {string} confirmation line.
+ * @returns {Promise<string>} confirmation line.
  */
-function macroSet(rest, store, userId)
+async function macroSet(rest, store, userId)
 {
 	const colon = rest.indexOf(':');
 	if (colon === -1)
@@ -277,7 +279,7 @@ function macroSet(rest, store, userId)
 		throw new DiceError(`Macro "${name}" refers to itself`);
 	}
 
-	validateFormula(expandMacros(formula, store, userId));
+	await validateFormula(expandMacros(formula, store, userId));
 	const updated = store.has(name);
 	store.set(name, formula);
 	return updated ? `✅ macro "${name}" updated: ${formula}` : `✅ macro "${name}" set: ${formula}`;
@@ -399,9 +401,9 @@ function macroNotMe(rest, store, userId)
  * @param {object} [context] command context.
  * @param {string|null} [context.userId] author id for per-user pins.
  * @param {import('../macrostore.js').MacroStore} [context.macros] macro store.
- * @returns {string} reply block.
+ * @returns {Promise<string>} reply block.
  */
-function handleMacro(argument, context = {})
+async function handleMacro(argument, context = {})
 {
 	const store = context.macros ?? macroStore;
 	const userId = context.userId ?? null;

@@ -7,6 +7,7 @@
  */
 
 import { rollFormula } from '../dice.js';
+import { rollLocal } from '../random.js';
 import { expandMacros } from './macro.js';
 import { macroStore } from '../macrostore.js';
 
@@ -17,11 +18,12 @@ import { macroStore } from '../macrostore.js';
  * @param {object} [context] command context.
  * @param {string|null} [context.userId] author id for character-prefix lookup.
  * @param {import('../macrostore.js').MacroStore} [context.macros] macro store.
- * @returns {string} reply block: total plus annotated formula.
+ * @param {import('../random.js').RandomProvider} [context.random] active randomness provider.
+ * @returns {Promise<string>} reply block: total plus annotated formula and source emoji.
  * @throws {import('../dice.js').DiceError} on a bad formula; the caller
  *   skips it silently and logs the reason instead of answering.
  */
-function handleRoll(argument, context = {})
+async function handleRoll(argument, context = {})
 {
 	if (!argument)
 	{
@@ -29,12 +31,13 @@ function handleRoll(argument, context = {})
 	}
 
 	const store = context.macros ?? macroStore;
-	const result = rollFormula(expandMacros(argument, store, context.userId ?? null));
+	const roller = context.random?.roll ?? rollLocal;
+	const result = await rollFormula(expandMacros(argument, store, context.userId ?? null), roller);
 	const head = result.degree === null
 		? `**${result.total}**`
 		: `**${result.total}** ${result.degree.emoji}`;
 	const tail = result.dc === null ? result.annotated : `${result.annotated} vs DC ${result.dc}`;
-	return `${head}\n-# ${tail}`;
+	return result.source === null ? `${head}\n-# ${tail}` : `${head}\n-# ${tail} ${result.source.emoji}`;
 }
 
 /**

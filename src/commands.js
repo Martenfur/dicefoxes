@@ -23,6 +23,7 @@ import { rollCommand } from './commands/roll.js';
  * @typedef {object} CommandContext
  * @property {string|null} userId author id for per-user state, null when unknown.
  * @property {import('./macrostore.js').MacroStore} [macros] macro store; commands fall back to the file-backed one.
+ * @property {import('./random.js').RandomProvider} [random] active randomness provider.
  */
 
 /**
@@ -38,7 +39,7 @@ import { rollCommand } from './commands/roll.js';
  * @property {string} args usage placeholder, e.g. `<formula>`; empty when the command takes none.
  * @property {string} description one-two sentence summary for the help listing.
  * @property {SubcommandHelp[]} [subcommands] entries dfhelp lists instead of this command's own line.
- * @property {(argument: string, context: CommandContext) => string} handle builds one reply block from the trimmed argument.
+ * @property {(argument: string, context: CommandContext) => string|Promise<string>} handle builds one reply block from the trimmed argument.
  */
 
 /**
@@ -251,9 +252,9 @@ export function extractCommands(content)
  * @param {string} content raw message text.
  * @param {object} [options] optional overrides.
  * @param {CommandContext} [options.context] author and store info for commands that need it.
- * @returns {RenderedMessage} reply blocks plus skips, in message order.
+ * @returns {Promise<RenderedMessage>} reply blocks plus skips, in message order.
  */
-export function renderCommands(content, options = {})
+export async function renderCommands(content, options = {})
 {
 	const context = options.context ?? { userId: null };
 	const lines = [];
@@ -268,7 +269,7 @@ export function renderCommands(content, options = {})
 
 		try
 		{
-			lines.push(command.handle(parsed.argument, context));
+			lines.push(await command.handle(parsed.argument, context));
 		}
 		catch (error)
 		{

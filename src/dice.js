@@ -12,7 +12,7 @@
  * the total.
  */
 
-import { rollBatch } from './random.js';
+import { rollLocal } from './random.js';
 
 /** Largest number of sides a single die may have. */
 export const MAX_SIDES = 1000000;
@@ -50,6 +50,7 @@ export class DiceError extends Error
  * @property {string} annotated formula with rolled faces, e.g. `([15]1d20 + 12) * 2 - [1,4]2d4`.
  * @property {number|null} dc difficulty class, or null when unset.
  * @property {Degree|null} degree graded result, or null when no DC was set.
+ * @property {import('./random.js').RandomSource|null} source provider that served the roll, or null for diceless formulas.
  */
 
 /** Dice letters: latin `d`/`l`, cyrillic `д` (de), `к` (ka, short for куб), and `в`. */
@@ -610,14 +611,14 @@ function gradeDegree(total, dc, d20faces)
  *
  * Parses the formula, hands every die to the randomness module in one
  * batched call, then evaluates. The roller is injectable for tests and for
- * future providers: it receives the dice specs left to right and must
- * return one face array per spec.
+ * future providers: it receives the dice specs left to right and resolves
+ * `{ faces, source }`. Diceless formulas skip the roller entirely.
  *
  * @param {string} source formula text, e.g. `(1д20 + 12) * 2 - 2д4`.
- * @param {(specs: Array<{count: number, sides?: number, fate?: boolean}>) => number[][]} [roller] randomness source, defaults to {@link rollBatch}.
- * @returns {RollResult} formatted total, annotated formula, DC, and degree.
+ * @param {(specs: import('./random.js').DiceSpec[]) => import('./random.js').RollOutcome|Promise<import('./random.js').RollOutcome>} [roller] randomness source, defaults to local.
+ * @returns {Promise<RollResult>} formatted total, annotated formula, DC, degree, and source.
  */
-export function rollFormula(source, roller = rollBatch)
+export async function rollFormula(source, roller = rollLocal)
 {
 	if (typeof source !== 'string' || source.trim().length === 0)
 	{
@@ -633,8 +634,9 @@ export function rollFormula(source, roller = rollBatch)
 		throw new DiceError(`At most ${MAX_DICE_PER_FORMULA} dice per formula`);
 	}
 
+	const outcome = specs.length === 0 ? { faces: [], source: null } : await roller(specs);
 	const faces = [];
-	for (const batch of roller(specs))
+	for (const batch of outcome.faces)
 	{
 		for (const face of batch)
 		{
@@ -649,5 +651,6 @@ export function rollFormula(source, roller = rollBatch)
 		annotated: result.annotated,
 		dc,
 		degree: dc === null ? null : gradeDegree(result.value, dc, d20faces),
+		source: outcome.source,
 	};
 }
