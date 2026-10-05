@@ -4,10 +4,13 @@ This file is for agents working in this repo. Follow it for every change.
 
 ## Scope
 
-- Discord bot wiring plus a pure line-based command parser. No dice resolution,
-  no randomness providers yet.
+- Discord bot wiring, a pure line-based command parser, and a dice resolver
+  with a batched randomness module.
 - Do not touch `.env`. It already exists and holds secrets. If a new variable
   is needed, stop and ask the maintainer instead of editing it.
+- Do not touch `README.md` either. The maintainer writes it; it is the spec,
+  not a doc to keep in sync. If code and README disagree, ask instead of
+  editing the README.
 
 ## Runtime
 
@@ -43,7 +46,10 @@ This file is for agents working in this repo. Follow it for every change.
   `src/commands.js` holds the pure command parser (text in, text out).
   Each command lives in its own `src/commands/<name>.js` and is registered
   in `COMMANDS` inside `src/commands.js`.
-  Future dice logic (if any) must not import Discord, `process.env`, or time.
+  `src/dice.js` is the pure formula resolver, `src/random.js` the batched
+  randomness module behind it (one `rollBatch` call per formula).
+  `src/dice.js`, `src/random.js`, and command files must not import Discord,
+  `process.env`, or time.
 - Log lines are prefixed `[dicefoxes]`.
 
 ## Discord bot rules
@@ -57,9 +63,13 @@ This file is for agents working in this repo. Follow it for every change.
   (`rolling`, `troll` are ignored). `roll` has alias `ролл`. Lines without a
   trigger are skipped; text before the trigger is dropped and the trimmed
   rest is the argument.
-- `roll <args>` replies `Rolled <args>` (`roll` alone replies `Rolled`).
-  Reply lines are joined with `\n` into a single `channel.send`. Empty
-  results send nothing.
+- `roll <formula>` replies with the total plus the annotated formula:
+  `**<total>**` on the first line, `-# <annotated>` (subtext) on the second.
+  With `DC<n>` / `ДС<n>` the total line gains `<emoji>` and the
+  subtext gains `vs DC <n>`. Bad formulas are skipped silently (false
+  positives) and logged with the reason and channel id; bare `roll`
+  replies with a usage hint. Reply blocks are joined with `\n` into a single
+  `channel.send`. Empty results send nothing.
 - Replies wait `options.replyDelayMs` before sending (default 250ms).
   Pass `0` to reply immediately.
 - Wrap `channel.send` in `try/catch` and log a warning with the channel id.
