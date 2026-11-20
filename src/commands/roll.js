@@ -23,7 +23,7 @@ import { macroStore } from '../macrostore.js';
  * @param {string|null} [context.userId] author id for character-prefix lookup.
  * @param {import('../macrostore.js').MacroStore} [context.macros] macro store.
  * @param {import('../random.js').RandomProvider} [context.random] active randomness provider.
- * @returns {Promise<string|import('../commands.js').CommandReply>} reply block, or a placeholder plus secret delivery.
+ * @returns {Promise<string|import('../commands.js').CommandReply|null>} reply block, a placeholder plus secret delivery, or null for a bare `roll`.
  * @throws {import('../dice.js').DiceError} on a bad formula; the caller
  *   skips it silently and logs the reason instead of answering.
  */
@@ -31,7 +31,7 @@ async function handleRoll(argument, context = {})
 {
 	if (!argument)
 	{
-		return '❌ roll what? Try: roll 2d6 + 3';
+		return null;
 	}
 
 	let text = argument;
