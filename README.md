@@ -173,6 +173,8 @@ npm start
 
 By default, the bot will use a simple pseudorandom number generator. It's good enough for most but this still leaves the feeling of everythign being predetermined and "wasted" 20s. By its nature, RNG number sequence is predetermined. I don't like that, so I added an option to hook the bot to a true randomnes API from random.org.
 
+Unlike RNG, true randomness is completely unpredictable and instead of relyin on math relies on natural phenomena like atmospheric fluctuations.
+
 How to use: 
 
 1. Get an API key here: [https://api.random.org/dashboard](https://api.random.org/dashboard) (Don't worry, it's free unless you're hosting this bot for thousands of people)
@@ -180,6 +182,8 @@ How to use:
 ```
 RANDOM_ORG_API_KEY=xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
+
+If you did everything right, you should see your die 🎲 emoji change into a cloud ☁️ emoji after the roll. This means that your roll was truly random!
 
 ## Running As A Service
 
