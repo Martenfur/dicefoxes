@@ -1,0 +1,19 @@
+{
+  "name": "dicefoxes",
+  "version": "1.0.0",
+  "description": "A dice-rolling Discord bot (Discord wiring only for now).",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  }
+}

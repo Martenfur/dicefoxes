@@ -1,0 +1,230 @@
+# DICE FOXES
+
+![logo](assets/logo.png)
+
+A simple bot that rolls dice! Supports Pathfinder, D&D and Fate, macros and true randomness.
+
+## Dice Syntax
+
+You can roll dice using `roll` or `ролл` commands (Everything has a cyrillic alias).
+
+### Basic example
+
+```
+roll 2d20
+or
+ролл 2д20
+or
+ролл 2к20
+```
+
+This will roll 2 20-sided dice. You can roll any number of dice with any number of faces, for example, `49d53` is also valid.
+
+There is also support for special FATE dice. You roll them like this:
+
+```
+roll 1df
+or
+ролл 1дф
+```
+
+This will roll one of the following values: `-1, 0, 1`.
+
+### Formulas
+
+You can use mathematical operations and flat bonuses in your rolls. Supported operations are: addition, subtraction, multiplication and division.
+Formulas follow regular mathematical order of operations. Example:
+
+```
+roll (1d20 + 12) * 2 - 1d4
+or
+ролл (1д20 + 12) * 2 - 1д4
+```
+
+### Setting DCs
+
+You can set a DC for your roll. Example:
+
+```
+roll 1d20 + 5 DC15
+or
+ролл 1д20 + 5 ДС15
+```
+
+If you set a DC the bot will tell you if you've met it or not. There are 4 outcomes that are possible: crit fail, fail, success and crit success.
+You succeed if you meet or beat the DC. You crit succees or crit fail if you miss or exceed the DC by 10.
+If you roll a single d20, natural 20 will also promote your degree of success (for example, fail becomes a success or success becomes crit success).
+If you roll a natual 1, the opposite thing happens - you get a result that is one degree of success lower.
+
+### Secret Channel
+
+You can set a secret channel for secret rolls you don't want your players to see.
+Use this command in a channel you want to assign for secret rolls:
+
+```
+dfsecret
+```
+
+Bot will remember this channel and all secret rolls in this server will go to that channel.
+
+Afterwards, you will be able to do secret rolls:
+
+```
+roll secret 1d20
+or
+ролл секрет 1д20
+```
+
+### Macros
+
+You can set a formula as a macro you can invoke later.
+
+```
+macro set melchior athletics: 1d20 + 24
+```
+
+Later on, you can roll using the macro instead of a formula:
+
+```
+roll melchior athletics
+```
+
+This will roll `1d20 + 24`.
+
+You can even use macros as parts of formulas:
+
+```
+roll melchior athletics + 2
+```
+
+Note that you can use multiple words to describe your macro. You can use this to categorize your macros by different characters or things.
+
+If you want to delete a macro, use:
+
+```
+macro delete melchior athletics
+```
+
+To see the list of macros, use:
+
+```
+macro show
+```
+
+or if you want to only see macros that start with a specific category:
+
+```
+macro show melchior
+```
+
+### Macro characters
+
+You can assign a certain character to yourself:
+
+```
+macro me melchior
+```
+
+This way, the bot assumes you add this character's prefix if it doesn't find a macro that directly matches.
+
+For example, you can call
+
+```
+roll athletics
+```
+
+and the bot will assume you asked to roll `melchior athletics` if an `athletics` macro doesn't exist.
+
+You can unpin characters from yourself by using:
+
+```
+macro not me melchior
+```
+
+To view a list of your characters, use:
+
+```
+macro me
+```
+
+### Help!
+
+To see a list of all available commands and their short descriptions:
+
+```
+dfhelp
+```
+
+## Installation
+
+1. Create a Discord bot and get its API token. Create a file called `.env` in the root folder of the repo:
+```
+DISCORD_TOKEN=<your token>
+RANDOM_ORG_API_KEY=<your optional random.org key>
+```
+
+2. Install npm and Run:
+```
+npm install
+npm start
+```
+
+## True Randomness
+
+By default, the bot will use a simple pseudorandom number generator. It's good enough for most but this still leaves the feeling of everythign being predetermined and "wasted" 20s. By its nature, RNG number sequence is predetermined. I don't like that, so I added an option to hook the bot to a true randomnes API from random.org.
+
+Unlike RNG, true randomness is completely unpredictable and instead of relyin on math relies on natural phenomena like atmospheric fluctuations.
+
+How to use: 
+
+1. Get an API key here: [https://api.random.org/dashboard](https://api.random.org/dashboard) (Don't worry, it's free unless you're hosting this bot for thousands of people)
+2. Paste your key into your .env file:
+```
+RANDOM_ORG_API_KEY=xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+If you did everything right, you should see your die 🎲 emoji change into a cloud ☁️ emoji after the roll. This means that your roll was truly random!
+
+## Running As A Service
+
+If you want your bot to autorun on Linux:
+
+1. Create a new service file:
+   `sudo nano /etc/systemd/system/dicefoxes.service`
+2. Paste this into it:
+
+```ini
+[Unit]
+Description = Dice for foxes.
+After = network.target
+
+[Service]
+WorkingDirectory=/home/pi/dicefoxes
+ExecStart = npm start
+
+[Install]
+WantedBy = multi-user.target
+```
+
+3. `sudo systemctl daemon-reload`
+4. `sudo systemctl enable dicefoxes.service`
+5. `sudo systemctl start dicefoxes.service`
+
+If you make any changes to the service file, run:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl stop dicefoxes.service
+```
+
+If you want to stop the service:
+
+```bash
+sudo systemctl stop dicefoxes.service
+```
+
+If you want to check the logs:
+
+```bash
+sudo systemctl status dicefoxes.service
+```
